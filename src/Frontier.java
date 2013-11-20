@@ -18,7 +18,7 @@ public class Frontier {
         this.debug = debug;
         queueURLs = new PriorityQueue<URLScore>(initialCapacity);
         theURLs = new Hashtable<String, Integer>(initialCapacity);
-    }    }
+    }
 
     public void add(String url, double score) {
 	/********************************************************/
@@ -33,6 +33,7 @@ public class Frontier {
 	/* GAP!							*/
 	/* Remove and return the next URLScore in the frontier 	*/
 	/********************************************************/
+    	return null;
     }
 
     public boolean isEmpty() {

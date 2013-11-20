@@ -28,6 +28,7 @@ public class HTMLParser {
 	/* We are only interested in <a href> links that	*/
 	/* are html pages.					*/
 	/********************************************************/
+    	return null;
     }
 
     public String getBody() throws IOException {
@@ -35,6 +36,7 @@ public class HTMLParser {
 	/* GAP!							*/
 	/* Get the text of the body from the last document 	*/
 	/* retrieved						*/
-	/********************************************************/ 
+	/********************************************************/
+    	return null;
     }
 }

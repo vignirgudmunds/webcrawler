@@ -21,8 +21,8 @@ import org.jsoup.select.Elements;
 
 public class WebCrawler {
     private final int SEARCH_LIMIT = 500;  	// Absolute max # of pages crawled. Respect this, be polite!
-    private final int MILLISECOND_WAIT = 300;   // Wait between url requests, be polite!
-    private final boolean DEBUG = false;        // To control debugging output
+    private final int MILLISECOND_WAIT = 300; // Wait between url requests, be polite!
+    private final boolean DEBUG = false;     // To control debugging output
     private final String userAgent = "RuBot"; 	// Reykjavik University bot
 
     Frontier frontier;      // The frontier, the list of pages yet to be crawled (visited)
@@ -103,6 +103,7 @@ public class WebCrawler {
 	/* You do not have to implement stemming.		*/
 	/* However, make the comparison case-insensitive.	*/
 	/********************************************************/
+    	return false;
     }
     private boolean isRelevantUrl(String url) {
         /********************************************************/
@@ -112,6 +113,7 @@ public class WebCrawler {
 	/* i.e. if it contains the phrase query			*/
 	/* Uses the relevantText() method			*/
 	/********************************************************/
+    	return false;
     }
 
     private void processUrl(String url)

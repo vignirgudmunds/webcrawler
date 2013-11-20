@@ -9,5 +9,6 @@ public class URLCanonicalizer {
 	/* Here you need to implement whatever you think is 	*/
 	/* necessary to canonicalize an URL			*/
 	/********************************************************/
+    	return null;
     }
 }
