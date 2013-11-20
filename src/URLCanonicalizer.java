@@ -4,11 +4,12 @@
 public class URLCanonicalizer {
 
     public String getCanonicalURL(String url) {
-        /********************************************************/
-	/* GAP!							*/
+    /********************************************************/
+	/* GAP!													*/
 	/* Here you need to implement whatever you think is 	*/
-	/* necessary to canonicalize an URL			*/
+	/* necessary to canonicalize an URL						*/
 	/********************************************************/
-    	return null;
+    	
+    	return url;
     }
 }

@@ -22,10 +22,20 @@ public class Frontier {
 
     public void add(String url, double score) {
 	/********************************************************/
-	/* GAP!							*/
-	/* Adds a new URLScore to the frontier, but only if	*/
-	/* the url is not already there.			*/
+	/* GAP!													*/
+	/* Adds a new URLScore to the frontier, but only if		*/
+	/* the url is not already there.						*/
 	/********************************************************/
+    	if (!theURLs.containsKey(url)) {
+    		try {
+        		queueURLs.add(new URLScore(url, score));
+        		theURLs.put(url, 0);
+        		totalCount++;
+        	} catch (MalformedURLException e) {
+        		System.out.println(e.getMessage());
+    			// TODO: handle exception
+    		}
+    	}
     }
 
     public URLScore removeNext() {
@@ -33,7 +43,9 @@ public class Frontier {
 	/* GAP!							*/
 	/* Remove and return the next URLScore in the frontier 	*/
 	/********************************************************/
-    	return null;
+    	// TODO will return null if queue empty
+    	totalCount--;
+    	return queueURLs.poll();
     }
 
     public boolean isEmpty() {
