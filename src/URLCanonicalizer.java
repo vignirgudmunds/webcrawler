@@ -3,7 +3,7 @@
  */
 
 public class URLCanonicalizer {
-
+	
     public String getCanonicalURL(String url) {
     	
     	if (url == null) {
@@ -17,6 +17,32 @@ public class URLCanonicalizer {
     	url = canonPrefix(url);
 
     	return canonicalize(url);
+    }
+    
+    public void testCanonical() {
+    	
+    	URLCanonicalizer canonicalizerTest = new URLCanonicalizer();
+    	
+    	 /*http://www.mbl.is/sport/golf/#Mest_lesi__dag
+    	http://www.mbl.is/sport/golf/2013/11/06/vissa_hja_birgi_leifi/#Mest_lesi__dag
+    		Query found in page: http://www.mbl.is/sport/golf/2013/11/05/frestad_hja_birgi_leifi_sem_a_eina_holu_eftir/#
+    		Query found in page: http://www.mbl.is/sport/golf/2013/11/05/frestad_hja_birgi_leifi_sem_a_eina_holu_eftir/#Mest_lesi__dag*/
+    	
+    	System.out.println("http://www.mbl.is/sport/golf/#Mest_lesi__dag -> " + canonicalizerTest.getCanonicalURL("http://www.mbl.is/sport/golf/#Mest_lesi__dag"));
+    	
+    	/*System.out.println("http://mbl.is -> " + canonicalizerTest.getCanonicalURL("http://mbl.is"));
+    	System.out.println("www.mbl.is -> " + canonicalizerTest.getCanonicalURL("www.mbl.is"));
+    	System.out.println("http://www.mbl.is -> " + canonicalizerTest.getCanonicalURL("http://www.mbl.is"));
+    	System.out.println("ftp:168.192.28.1 -> " + canonicalizerTest.getCanonicalURL("ftp:168.192.28.1"));
+    	System.out.println("mbl.is -> " + canonicalizerTest.getCanonicalURL("mbl.is")); 
+    	System.out.println("MBL.is -> " + canonicalizerTest.getCanonicalURL("MBL.is"));
+    	System.out.println("http://mbl.is:80/frettir/enski/ -> " + canonicalizerTest.getCanonicalURL("http://mbl.is:80/frettir/enski/"));
+    	System.out.println("http://foodhunter.is/cs2#some -> " + canonicalizerTest.getCanonicalURL("http://foodhunter.is/cs2#some"));
+    	System.out.println("http://mbl.is -> " + canonicalizerTest.getCanonicalURL("http://mbl.is"));
+    	System.out.println("http://mbl.is/People -> " + canonicalizerTest.getCanonicalURL("http://mbl.is/People"));
+    	System.out.println("http://mbl.is/faq.html#3 -> " + canonicalizerTest.getCanonicalURL("http://mbl.is/faq.html#3"));
+    	System.out.println("http://mbl.is/# -> " + canonicalizerTest.getCanonicalURL("http://mbl.is/#"));
+    	System.out.println("http://mbl.is/index.html -> " + canonicalizerTest.getCanonicalURL("http://mbl.is/index.html"));*/
     }
     
     private String canonicalize(String url) {
@@ -48,7 +74,7 @@ public class URLCanonicalizer {
     	
     	
     	if (word.contains("#")){
-			if (word.length() == 1) {
+			if (word.startsWith("#")) {
 				return null;	// Requires removal of last word from URL
 			}
 			else {
