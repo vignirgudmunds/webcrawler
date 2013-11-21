@@ -1,6 +1,5 @@
 // A simple Web Crawler written in Java
 // Partly based on http://cs.nyu.edu/courses/fall02/G22.3033-008/proj1.html
-
 // Our crawler is a sequential, topical crawler.
 // It uses a priority queue for unvisited links.
 // The links are scored with 1.0 if the topic is part of the anchor text for a link, else 0.0.
@@ -92,12 +91,14 @@ public class WebCrawler {
 	/* You also need to score the links			*/
 	/********************************************************/
     	for (Element link : links) {
-    		//String url = link.attr("abs:href");
     		String url = canonicalizer.getCanonicalURL(link.attr("abs:href"));
     		Double score = 0.0;
     		
     		if (url.toLowerCase().contains(topic)) {
-    			score = 1.0;
+    			score += 1.0;
+    		}
+    		if (url.toLowerCase().contains(queryString)) {
+    			score += 1.0;
     		}
     		frontier.add(url, score);
     	}
@@ -106,25 +107,22 @@ public class WebCrawler {
 	// Returns true if our phrase query is found in the given text, otherwise false.
     private boolean isRelevantText(String text) {
 	/********************************************************/
-	/* GAP!							*/
-	/* You do not have to implement stemming.		*/
-	/* However, make the comparison case-insensitive.	*/
+	/* GAP!													*/
+	/* You do not have to implement stemming.				*/
+	/* However, make the comparison case-insensitive.		*/
 	/********************************************************/
     	//TODO query as is?
-    	if (text.contains(queryString)) 
-    		return true;
-    	else
-    		return false;
+    	return text.toLowerCase().contains(queryString) ? true : false; 
     }
     private boolean isRelevantUrl(String url) {
     /********************************************************/
 	/* GAP!							*/
-	/* Returns true if the body of the page			*/
-	/* corresponding to the url is relevant, 		*/
-	/* i.e. if it contains the phrase query			*/
-	/* Uses the relevantText() method			*/
+	/* Returns true if the body of the page					*/
+	/* corresponding to the url is relevant, 				*/
+	/* i.e. if it contains the phrase query					*/
+	/* Uses the relevantText() method						*/
 	/********************************************************/
-    	return htmlParser.getBody().toLowerCase().contains(queryString);
+    	return isRelevantText(htmlParser.getBody()); //.toLowerCase().contains(queryString);
     }
 
     private void processUrl(String url)
