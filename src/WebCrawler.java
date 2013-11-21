@@ -99,7 +99,7 @@ public class WebCrawler {
     		if (url.toLowerCase().contains(topic)) {
     			score = 1.0;
     		}
-    		frontier.add(link.attr("abs:href"), score);
+    		frontier.add(url, score);
     	}
     }
 
@@ -190,7 +190,7 @@ public class WebCrawler {
     public static void main(String[] argv)
     {
     	URLCanonicalizer canonicalizerTest = new URLCanonicalizer();
-    	
+    	/*
     	System.out.println("http://mbl.is -> " + canonicalizerTest.getCanonicalURL("http://mbl.is"));
     	System.out.println("www.mbl.is -> " + canonicalizerTest.getCanonicalURL("www.mbl.is"));
     	System.out.println("http://www.mbl.is -> " + canonicalizerTest.getCanonicalURL("http://www.mbl.is"));
@@ -204,10 +204,10 @@ public class WebCrawler {
     	System.out.println("http://mbl.is/faq.html#3 -> " + canonicalizerTest.getCanonicalURL("http://mbl.is/faq.html#3"));
     	System.out.println("http://mbl.is/# -> " + canonicalizerTest.getCanonicalURL("http://mbl.is/#"));
     	System.out.println("http://mbl.is/index.html -> " + canonicalizerTest.getCanonicalURL("http://mbl.is/index.html"));
-    	
-        /* WebCrawler wc = new WebCrawler();
+    	*/
+        WebCrawler wc = new WebCrawler();
         wc.initialize(argv);
-        wc.crawl(); */
+        wc.crawl(); 
     }
 }
 
