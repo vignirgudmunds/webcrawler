@@ -37,8 +37,6 @@ public class WebCrawler {
     HTMLParser htmlParser;  	// A HTMLParser
     int totalRelevant=0;    	// Total number of pages containing our query string
 
-
-
     public void initialize(String[] argv) {
         String url;
         robotParser = new RobotTxtParser(userAgent, DEBUG);
@@ -48,11 +46,10 @@ public class WebCrawler {
         visitedURLs = new Hashtable<String, Integer>();
         frontier = new Frontier(DEBUG);
 
-        url = argv[0];                  // The seed URL supplied by the user
+        url = argv[0];                  							// The seed URL supplied by the user
         topic = argv[1].toLowerCase();  // The topic
         queryString = argv[2].toLowerCase().replaceAll("\\s+", " ");	// The query words supplied by the user
         queryWords = queryString.split("\\s");    // Assume space between query words
-
         String canonicalUrl = canonicalizer.getCanonicalURL(url);	// Canonicalize the URL
         frontier.add(canonicalUrl, 0.0);                            // The seed has score 0.0
 
@@ -94,6 +91,16 @@ public class WebCrawler {
 	/* of the links to the frontier				*/
 	/* You also need to score the links			*/
 	/********************************************************/
+    	for (Element link : links) {
+    		//String url = link.attr("abs:href");
+    		String url = canonicalizer.getCanonicalURL(link.attr("abs:href"));
+    		Double score = 0.0;
+    		
+    		if (url.toLowerCase().contains(topic)) {
+    			score = 1.0;
+    		}
+    		frontier.add(link.attr("abs:href"), score);
+    	}
     }
 
 	// Returns true if our phrase query is found in the given text, otherwise false.
@@ -103,28 +110,42 @@ public class WebCrawler {
 	/* You do not have to implement stemming.		*/
 	/* However, make the comparison case-insensitive.	*/
 	/********************************************************/
-    	return false;
+    	//TODO query as is?
+    	if (text.contains(queryString)) 
+    		return true;
+    	else
+    		return false;
     }
     private boolean isRelevantUrl(String url) {
-        /********************************************************/
+    /********************************************************/
 	/* GAP!							*/
 	/* Returns true if the body of the page			*/
 	/* corresponding to the url is relevant, 		*/
 	/* i.e. if it contains the phrase query			*/
 	/* Uses the relevantText() method			*/
 	/********************************************************/
-    	return false;
+    	return htmlParser.getBody().toLowerCase().contains(queryString);
     }
 
     private void processUrl(String url)
     {
 	/********************************************************/
-	/* GAP!							*/
-	/* Process the given url, which means at least:		*/
-	/* 1) Connect to it using the HTML parser		*/
+	/* GAP!													*/
+	/* Process the given url, which means at least:			*/
+	/* 1) Connect to it using the HTML parser				*/
 	/* 2) Print an appropriate message if it is relevant	*/
 	/* 3) Extract links from the url and add to frontier	*/
 	/********************************************************/	
+    	try {
+    		htmlParser.connect(url, userAgent);
+    		addLinks(getLinks(url));
+    		if (isRelevantUrl(url)) {
+    			totalRelevant++;
+        		System.out.println("Query found in page: " + url);
+        	}
+    	} catch (IOException e) {
+			System.out.println(e.getMessage());
+		}
     }
 
     private void wait(int milliseconds)	// Halt execution for the specified number of milliseconds
@@ -141,15 +162,20 @@ public class WebCrawler {
     public void crawl()
     {
         for (int i = 0; i < maxPages; i++) {        // Visit maxPages
-
-	    /****************************************************/
-	    /* GAP!						*/
-	    /* Retrive the next url from the frontier		*/
-	    /* parse and process it given that			*/
-	    /* 	you are allowed to do so (robot.txt)		*/
-	    /* 	and that the url has not been visitied before 	*/
-	    /****************************************************/
-
+    	    /****************************************************/
+    	    /* GAP!						*/
+    	    /* Retrive the next url from the frontier		*/
+    	    /* parse and process it given that			*/
+    	    /* 	you are allowed to do so (robot.txt)		*/
+    	    /* 	and that the url has not been visitied before 	*/
+    	    /****************************************************/
+        	// Retrive the next url from the frontier and process the url
+        	URLScore currentUrl = frontier.removeNext(); 
+        	if (robotParser.isUrlAllowed(currentUrl.getURLString())) {
+        		// TODO keep hashmap of allowed domains
+        		processUrl(currentUrl.getURLString());
+        	}
+        	//System.out.println(frontier.getSize());
             wait(MILLISECOND_WAIT);          // Be polite, wait x milliseconds before fetching the next page
 
             if (frontier.isEmpty()) break;   // Break the loop if frontier is empty
@@ -167,8 +193,5 @@ public class WebCrawler {
         wc.initialize(argv);
         wc.crawl();
     }
-
-
-
 }
 

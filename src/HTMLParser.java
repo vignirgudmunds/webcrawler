@@ -23,20 +23,28 @@ public class HTMLParser {
 
     public Elements getLinks() throws IOException {
 	/********************************************************/
-	/* GAP!							*/
+	/* GAP!												*/
 	/* Get the links from the last document retrieved	*/
 	/* We are only interested in <a href> links that	*/
-	/* are html pages.					*/
+	/* are html pages.									*/
 	/********************************************************/
-    	return null;
+    	Elements hrefs = currentDoc.select("a[href]");
+    	Elements links = new Elements();
+    	for (Element link : hrefs) {
+    		if (link.attr("abs:href").contains("http")) {
+    			links.add(link);
+    		}
+    	}
+    	
+    	return links;
     }
 
-    public String getBody() throws IOException {
+    public String getBody() { //throws IOException {
 	/********************************************************/
-	/* GAP!							*/
+	/* GAP!												*/
 	/* Get the text of the body from the last document 	*/
-	/* retrieved						*/
+	/* retrieved										*/
 	/********************************************************/
-    	return null;
+    	return currentDoc.text();
     }
 }
