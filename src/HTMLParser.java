@@ -18,6 +18,8 @@ public class HTMLParser {
         }
         catch (java.nio.charset.IllegalCharsetNameException e)  {
             throw new IOException(e.toString());
+        } catch (IllegalArgumentException ex) {
+        	throw new IOException("Error connecting to " + url + ": " + ex.getMessage());
         }
     }
 

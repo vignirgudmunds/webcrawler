@@ -85,7 +85,7 @@ public class RobotTxtParser {
         }
   }
 
-    //    Reads in the contents of the stream and returns it as a string
+    // Reads in the contents of the stream and returns it as a string
     private String readUrlContent(URL url) {
         InputStream is;
         String data="";
@@ -246,7 +246,7 @@ public class RobotTxtParser {
             }
         }
 
-        return true;    // If we get here then no directives were found or the url is neither specifically allowed nor specifically disallowed
+        return true;   // If we get here then no directives were found or the url is neither specifically allowed nor specifically disallowed
                         // Then allow it!
     }
 

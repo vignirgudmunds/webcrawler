@@ -15,6 +15,9 @@
 
 import java.util.*;
 import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URL;
+
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
@@ -46,9 +49,9 @@ public class WebCrawler {
         frontier = new Frontier(DEBUG);
 
         url = argv[0];                  							// The seed URL supplied by the user
-        topic = argv[1].toLowerCase();  // The topic
-        queryString = argv[2].toLowerCase().replaceAll("\\s+", " ");	// The query words supplied by the user
-        queryWords = queryString.split("\\s");    // Assume space between query words
+        topic = argv[1].toLowerCase();  							// The topic
+        queryString = argv[2].toLowerCase().replaceAll("\\s+", " ");// The query words supplied by the user
+        queryWords = queryString.split("\\s");    					// Assume space between query words
         String canonicalUrl = canonicalizer.getCanonicalURL(url);	// Canonicalize the URL
         frontier.add(canonicalUrl, 0.0);                            // The seed has score 0.0
 
@@ -68,8 +71,7 @@ public class WebCrawler {
    }   
 
     // Retrieve the links (href) from the given url
-    private Elements getLinks(String url)
-    {
+    private Elements getLinks(String url) {
         Elements links;
         try {
             links = htmlParser.getLinks();      // Retrieve the <a href> links
@@ -82,13 +84,12 @@ public class WebCrawler {
     }
 
     // Adds the retrieved links to the frontier
-    private void addLinks(Elements links)
-    {
+    private void addLinks(Elements links, boolean fromRelevant) {
 	/********************************************************/
-	/* GAP!							*/
-	/* Make sure that you add canonicalized versions	*/
-	/* of the links to the frontier				*/
-	/* You also need to score the links			*/
+	/* GAP!													*/
+	/* Make sure that you add canonicalized versions		*/
+	/* of the links to the frontier							*/
+	/* You also need to score the links						*/
 	/********************************************************/
     	for (Element link : links) {
     		String url = canonicalizer.getCanonicalURL(link.attr("abs:href"));
@@ -100,32 +101,42 @@ public class WebCrawler {
     		if (url.toLowerCase().contains(queryString)) {
     			score += 1.0;
     		}
+    		if (fromRelevant) {
+    			score += 1.0;
+    		}
     		frontier.add(url, score);
     	}
     }
 
-	// Returns true if our phrase query is found in the given text, otherwise false.
+    /**
+     * Does a case-insensitive comparison in searching for 
+     * the phrase query in the given text.
+     * Does not implement stemming.
+     * 
+     * @param text	The text to search for the query phrase in
+     * @return true if our phrase query is found in the given text, otherwise false.
+     */
     private boolean isRelevantText(String text) {
-	/********************************************************/
-	/* GAP!													*/
-	/* You do not have to implement stemming.				*/
-	/* However, make the comparison case-insensitive.		*/
-	/********************************************************/
-    	//TODO query as is?
     	return text.toLowerCase().contains(queryString) ? true : false; 
     }
-    private boolean isRelevantUrl(String url) {
-    /********************************************************/
-	/* GAP!							*/
-	/* Returns true if the body of the page					*/
-	/* corresponding to the url is relevant, 				*/
-	/* i.e. if it contains the phrase query					*/
-	/* Uses the relevantText() method						*/
-	/********************************************************/
-    	return isRelevantText(htmlParser.getBody()); //.toLowerCase().contains(queryString);
+    
+    /**
+     * Retrieves the text in the body of the last retrieved document.
+     * Decides whether or not the url is relevant, based on whether
+     * or not it contains the phrase query. 
+     * 
+     * @return 		true if the body of the page corresponding to the url is relevant.
+     */
+    private boolean isRelevantUrl() {
+    	return isRelevantText(htmlParser.getBody());
     }
 
-    private void processUrl(String url)
+    /**
+     * Attempts to connect to the given url and retrive the html document.
+     * 
+     * @param url
+     */
+    private boolean processUrl(String url)
     {
 	/********************************************************/
 	/* GAP!													*/
@@ -136,16 +147,66 @@ public class WebCrawler {
 	/********************************************************/	
     	try {
     		htmlParser.connect(url, userAgent);
-    		addLinks(getLinks(url));
-    		if (isRelevantUrl(url)) {
-    			totalRelevant++;
-        		System.out.println("Query found in page: " + url);
-        	}
+    		
     	} catch (IOException e) {
-			System.out.println(e.getMessage());
+    		if (DEBUG) {
+    			System.out.println(e.getMessage() + ": " + url);
+    			return false;
+    		}
 		}
+    	boolean relevant = false;
+		
+		if (isRelevantUrl()) {
+			totalRelevant++;
+			relevant = true;
+    		System.out.println("Query found in page: " + url);
+    	}
+		
+		addLinks(getLinks(url), relevant);
+		return true;
     }
 
+    // This method does the crawling.
+    public void crawl()
+    {
+    	long startTime = System.currentTimeMillis();
+    	//long visitTime = System.currentTimeMillis();
+        for (int i = 0; i < maxPages; i++) {        // Visit maxPages
+    	    /****************************************************/
+    	    /* GAP!												*/
+    	    /* Retrive the next url from the frontier			*/
+    	    /* parse and process it given that					*/
+    	    /* 	you are allowed to do so (robot.txt)			*/
+    	    /* 	and that the url has not been visitied before 	*/
+    	    /****************************************************/
+        	// Retrive the next url from the frontier and process the url
+        	long visitTime = System.currentTimeMillis();
+        	URLScore currentUrl = frontier.removeNext();
+        	boolean shouldWait = false;
+        	if (robotParser.isUrlAllowed(currentUrl.getURLString())) {
+        		
+        		shouldWait = processUrl(currentUrl.getURLString());
+        	}
+        	int msToWait = MILLISECOND_WAIT - (int)(System.currentTimeMillis() - visitTime);
+        	if (msToWait > 10 && currentUrl.getHost().equals(frontier.peekNextHost())) {
+        		//if (currentUrl.getHost().equals(frontier.peekNextHost())) {
+        			wait(msToWait);          // Be polite, wait x milliseconds before fetching the next page
+        	} /*else {
+        			wait(MILLISECOND_WAIT/2);        // Be polite, wait x/2 milliseconds before fetching the next page if it's a different host name
+        		}*/
+        	//}
+
+            if (frontier.isEmpty()) break;   // Break the loop if frontier is empty
+        }
+        double elapsedTime = (System.currentTimeMillis() - startTime) / 1000.0;
+        System.out.println("--------------------------------------------------------");
+        System.out.println("Search complete, " + maxPages + " pages crawled");
+        System.out.println("Search query " + queryString + " found in " + totalRelevant + " pages");
+        System.out.println("Total distinctive urls found: " + frontier.totalCount());
+        System.out.println("Seconds elapsed during crawl: " + elapsedTime);
+        System.out.println("--------------------------------------------------------");
+    }
+    
     private void wait(int milliseconds)	// Halt execution for the specified number of milliseconds
     {
         try {
@@ -156,40 +217,11 @@ public class WebCrawler {
         }
     }
 
-    // This method does the crawling.
-    public void crawl()
-    {
-        for (int i = 0; i < maxPages; i++) {        // Visit maxPages
-    	    /****************************************************/
-    	    /* GAP!						*/
-    	    /* Retrive the next url from the frontier		*/
-    	    /* parse and process it given that			*/
-    	    /* 	you are allowed to do so (robot.txt)		*/
-    	    /* 	and that the url has not been visitied before 	*/
-    	    /****************************************************/
-        	// Retrive the next url from the frontier and process the url
-        	URLScore currentUrl = frontier.removeNext(); 
-        	if (robotParser.isUrlAllowed(currentUrl.getURLString())) {
-        		// TODO keep hashmap of allowed domains
-        		processUrl(currentUrl.getURLString());
-        	}
-        	//System.out.println(frontier.getSize());
-            wait(MILLISECOND_WAIT);          // Be polite, wait x milliseconds before fetching the next page
-
-            if (frontier.isEmpty()) break;   // Break the loop if frontier is empty
-        }
-        System.out.println("--------------------------------------------------------");
-        System.out.println("Search complete, " + maxPages + " pages crawled");
-        System.out.println("Search query " + queryString + " found in " + totalRelevant + " pages");
-        System.out.println("Total distinctive urls found: " + frontier.totalCount());
-        System.out.println("--------------------------------------------------------");
-    }
-
     public static void main(String[] argv)
     {
     	/*URLCanonicalizer canonicalizerTest = new URLCanonicalizer();
     	canonicalizerTest.testCanonical();*/
-   
+    	
         WebCrawler wc = new WebCrawler();
         wc.initialize(argv);
         wc.crawl();

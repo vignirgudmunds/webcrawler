@@ -18,6 +18,11 @@ public class URLScore implements Comparable<URLScore> {
     public URL getURL() {
         return _url;
     }
+    
+    //TODO added this
+    public String getHost() {
+    	return _url.getHost();
+    }
 
     public double getScore() {
         return _score;
