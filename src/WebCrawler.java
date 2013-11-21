@@ -189,9 +189,25 @@ public class WebCrawler {
 
     public static void main(String[] argv)
     {
-        WebCrawler wc = new WebCrawler();
+    	URLCanonicalizer canonicalizerTest = new URLCanonicalizer();
+    	
+    	System.out.println("http://mbl.is -> " + canonicalizerTest.getCanonicalURL("http://mbl.is"));
+    	System.out.println("www.mbl.is -> " + canonicalizerTest.getCanonicalURL("www.mbl.is"));
+    	System.out.println("http://www.mbl.is -> " + canonicalizerTest.getCanonicalURL("http://www.mbl.is"));
+    	System.out.println("ftp:168.192.28.1 -> " + canonicalizerTest.getCanonicalURL("ftp:168.192.28.1"));
+    	System.out.println("mbl.is -> " + canonicalizerTest.getCanonicalURL("mbl.is")); 
+    	System.out.println("MBL.is -> " + canonicalizerTest.getCanonicalURL("MBL.is"));
+    	System.out.println("http://mbl.is:80/frettir/enski/ -> " + canonicalizerTest.getCanonicalURL("http://mbl.is:80/frettir/enski/"));
+    	System.out.println("http://foodhunter.is/cs2#some -> " + canonicalizerTest.getCanonicalURL("http://foodhunter.is/cs2#some"));
+    	System.out.println("http://mbl.is -> " + canonicalizerTest.getCanonicalURL("http://mbl.is"));
+    	System.out.println("http://mbl.is/People -> " + canonicalizerTest.getCanonicalURL("http://mbl.is/People"));
+    	System.out.println("http://mbl.is/faq.html#3 -> " + canonicalizerTest.getCanonicalURL("http://mbl.is/faq.html#3"));
+    	System.out.println("http://mbl.is/# -> " + canonicalizerTest.getCanonicalURL("http://mbl.is/#"));
+    	System.out.println("http://mbl.is/index.html -> " + canonicalizerTest.getCanonicalURL("http://mbl.is/index.html"));
+    	
+        /* WebCrawler wc = new WebCrawler();
         wc.initialize(argv);
-        wc.crawl();
+        wc.crawl(); */
     }
 }
 
