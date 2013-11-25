@@ -26,6 +26,7 @@ public class WebCrawler {
     private final int MILLISECOND_WAIT = 300; // Wait between url requests, be polite!
     private final boolean DEBUG = false;     // To control debugging output
     private final String userAgent = "RuBot"; 	// Reykjavik University bot
+    
 
     Frontier frontier;      // The frontier, the list of pages yet to be crawled (visited)
     Hashtable<String, Integer> visitedURLs;    // The list of visited URLs
@@ -38,6 +39,26 @@ public class WebCrawler {
     RobotTxtParser robotParser; // A robots.txt parser
     HTMLParser htmlParser;  	// A HTMLParser
     int totalRelevant=0;    	// Total number of pages containing our query string
+    
+    static final Map<String, String> IStoEN;
+	static {
+	    IStoEN = new HashMap<String, String>();
+	    String[][] pairs = {
+    		{"á", "a"},
+	        {"ð", "d"},
+	        {"é", "e"},
+	        {"í", "i"},
+	        {"ó", "o"},
+	        {"ú", "u"},
+	        {"ý", "y"},
+	        {"þ", "th"},
+	        {"æ", "ae"},
+	        {"ö", "o"}
+	    };
+	    for (String[] pair : pairs) {
+	        IStoEN.put(pair[0], pair[1]);
+	    }
+	}
 
     public void initialize(String[] argv) {
         String url;
@@ -52,6 +73,13 @@ public class WebCrawler {
         topic = argv[1].toLowerCase();  							// The topic
         queryString = argv[2].toLowerCase().replaceAll("\\s+", " ");// The query words supplied by the user
         queryWords = queryString.split("\\s");    					// Assume space between query words
+        
+        // queryWordsToEN(); // Map possible IS characters to US
+        
+        /* for (int i=0; i< queryWords.length; i++) {
+        	System.out.println(queryWords[i]);
+        } */
+        
         String canonicalUrl = canonicalizer.getCanonicalURL(url);	// Canonicalize the URL
         frontier.add(canonicalUrl, 0.0);                            // The seed has score 0.0
 
@@ -70,7 +98,21 @@ public class WebCrawler {
         System.out.println("--------------------------------------------------------");
    }   
 
-    // Retrieve the links (href) from the given url
+    private void queryWordsToEN() {
+    	for (int i=0; i<queryWords.length; i++) {
+    		for (int j=0; j<queryWords[i].length(); j++) {
+    			String strIS = String.valueOf(queryWords[i].charAt(j));
+    			if(IStoEN.containsKey(strIS)) {
+    				String strEN = IStoEN.get(strIS);
+    				System.out.println(queryWords[i]);
+    				queryWords[i] = queryWords[i].replace(strIS, strEN);
+    				System.out.println(queryWords[i]);
+    			}
+    		}
+    	}
+	}
+
+	// Retrieve the links (href) from the given url
     private Elements getLinks(String url) {
         Elements links;
         try {
@@ -92,23 +134,45 @@ public class WebCrawler {
 	/* You also need to score the links						*/
 	/********************************************************/
     	for (Element link : links) {
-    		String url = canonicalizer.getCanonicalURL(link.attr("abs:href"));
-    		Double score = 0.0;
     		
-    		if (url.toLowerCase().contains(topic)) {
-    			score += 1.0;
-    		}
-    		if (url.toLowerCase().contains(queryString)) {
-    			score += 1.0;
-    		}
-    		if (fromRelevant) {
-    			score += 1.0;
-    		}
+    		String url = canonicalizer.getCanonicalURL(link.attr("abs:href"));
+    		
+    		Double score = rateURL(url, fromRelevant);
+    		
     		frontier.add(url, score);
     	}
     }
 
-    /**
+    private Double rateURL(String url, boolean rel) {
+    	
+    	Double score = 0.0;
+    	
+    	if (url.toLowerCase().contains(topic)) {
+			score += 1.0;
+		}
+    	
+    	for (int i=0; i<queryWords.length; i++) {
+    		/* int scoreCnt=0;
+    		for (int j=0; j<queryWords[i].length(); j++) {
+    			if (true) {
+    				scoreCnt++;
+    			}
+    		}*/
+    		
+    		if (url.toLowerCase().contains(queryWords[i])) {	
+    			score += 1.0;
+    			break;
+    		}
+    	}
+
+		if (rel) {
+			score += 1.0;
+		}
+		
+		return score;
+	}
+
+	/**
      * Does a case-insensitive comparison in searching for 
      * the phrase query in the given text.
      * Does not implement stemming.
@@ -145,6 +209,10 @@ public class WebCrawler {
 	/* 2) Print an appropriate message if it is relevant	*/
 	/* 3) Extract links from the url and add to frontier	*/
 	/********************************************************/	
+    	//System.out.println("OLD URL" + url);
+    	//url = canonicalizer.getCanonicalURL(url);
+    	//System.out.println("NEW URL" + url);
+    	
     	try {
     		htmlParser.connect(url, userAgent);
     		

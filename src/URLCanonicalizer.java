@@ -82,6 +82,10 @@ public class URLCanonicalizer {
 			}
 		}
     	
+    	if (word.contains("?") && !word.startsWith("?")){
+    		word = word.substring(0, word.indexOf("?"));
+		}
+    	
 		return canonWord(word);
 	}
 
