@@ -32,9 +32,15 @@ public class WebCrawler {
     Hashtable<String, Integer> visitedURLs;    // The list of visited URLs
     URLCanonicalizer canonicalizer; // Used to transform URLs to canonical form
     int maxPages;           // max number of pages to crawl, may be supplied by the user
+    
     String topic;           // the topic we are interested in
-    String queryString;    // the query string we are interested in
+    String topicEN = "";			// the topic we are interested in
+    String queryString = "";    // the query string we are interested in
     String[] queryWords;   // individual words of the query string
+    String queryStringEN = "";    // the query string in english we are interested in
+    String[] queryWordsEN;   // individual english words of the query string
+    boolean usingTopicEN = false;
+    boolean usingQueryEN = false;
 
     RobotTxtParser robotParser; // A robots.txt parser
     HTMLParser htmlParser;  	// A HTMLParser
@@ -74,12 +80,9 @@ public class WebCrawler {
         queryString = argv[2].toLowerCase().replaceAll("\\s+", " ");// The query words supplied by the user
         queryWords = queryString.split("\\s");    					// Assume space between query words
         
-        // queryWordsToEN(); // Map possible IS characters to US
-        
-        /* for (int i=0; i< queryWords.length; i++) {
-        	System.out.println(queryWords[i]);
-        } */
-        
+        topicToEN();
+        queryWordsToEN(); // Map possible IS characters to US
+
         String canonicalUrl = canonicalizer.getCanonicalURL(url);	// Canonicalize the URL
         frontier.add(canonicalUrl, 0.0);                            // The seed has score 0.0
 
@@ -92,23 +95,51 @@ public class WebCrawler {
 
         System.out.println("--------------------------------------------------------");
         System.out.println("Starting crawl, seed: " + canonicalUrl);
-        System.out.println("Topic: " + topic);
-        System.out.println("Query string: " + queryString);
+        
+        if(usingTopicEN) {
+        	System.out.println("Topic: " + topic + " has been converted to: " + topicEN);
+        }
+        else {
+        	System.out.println("Topic: " + topic);
+        }
+        
+        if(usingQueryEN) {
+        	System.out.println("Query string: " + queryString + " has been converted to: " + queryStringEN);
+        }
+        else {
+        	System.out.println("Query string: " + queryString);
+        }
         System.out.println("Maximum number of pages to visit: " + maxPages);
         System.out.println("--------------------------------------------------------");
    }   
 
-    private void queryWordsToEN() {
+    private void topicToEN() {
+    	for (int i=0; i<topic.length(); i++) {
+			String strIS = String.valueOf(topic.charAt(i));
+			if(IStoEN.containsKey(strIS)) {
+				String strEN = IStoEN.get(strIS);
+				topicEN = topic.replace(strIS, strEN);
+				usingTopicEN = true;
+			}
+		}	
+    	
+    	if (!usingTopicEN) {
+    		topicEN = topic;
+    	}
+	}
+
+	private void queryWordsToEN() {
+        queryWordsEN = queryWords;  					// Assume space between query words
     	for (int i=0; i<queryWords.length; i++) {
     		for (int j=0; j<queryWords[i].length(); j++) {
     			String strIS = String.valueOf(queryWords[i].charAt(j));
     			if(IStoEN.containsKey(strIS)) {
     				String strEN = IStoEN.get(strIS);
-    				System.out.println(queryWords[i]);
-    				queryWords[i] = queryWords[i].replace(strIS, strEN);
-    				System.out.println(queryWords[i]);
+    				queryWordsEN[i] = queryWords[i].replace(strIS, strEN);
+    				usingQueryEN = true;
     			}
     		}
+    		queryStringEN += queryWordsEN[i] + " ";
     	}
 	}
 
@@ -147,12 +178,12 @@ public class WebCrawler {
     	
     	Double score = 0.0;
     	
-    	if (url.toLowerCase().contains(topic)) {
+    	if (url.toLowerCase().contains(topicEN)) {
 			score += 1.0;
 		}
     	
-    	for (int i=0; i<queryWords.length; i++) {            
-            if (url.toLowerCase().contains(queryWords[i])) {        
+    	for (int i=0; i<queryWordsEN.length; i++) {            
+            if (url.toLowerCase().contains(queryWordsEN[i])) {        
                 score += 1.0;
                 break;
             }
@@ -163,25 +194,6 @@ public class WebCrawler {
 		}
 		
 		return score;
-    	
-    	/* String coreURL = url.substring("http://".length());
-		String[] urlList = coreURL.split("/");
-		
-    	boolean match = false;
-    	for (int i=0; i<queryWords.length; i++) {
-    		int scoreCnt=0;
-    		for (int j=0; j<queryWords[i].length(); j++) {
-    			if (true) {
-    				match = true;
-    				scoreCnt++;
-    			}
-    		}
-    		
-    		if (url.toLowerCase().contains(queryWords[i])) {	
-    			score += 1.0;
-    			break;
-    		}
-    	} */
 
 	}
 
