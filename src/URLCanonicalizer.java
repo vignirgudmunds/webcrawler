@@ -4,6 +4,8 @@
 
 public class URLCanonicalizer {
 	
+	String prefix = "";
+	
     public String getCanonicalURL(String url) {
     	
     	if (url == null) {
@@ -28,7 +30,7 @@ public class URLCanonicalizer {
     		Query found in page: http://www.mbl.is/sport/golf/2013/11/05/frestad_hja_birgi_leifi_sem_a_eina_holu_eftir/#
     		Query found in page: http://www.mbl.is/sport/golf/2013/11/05/frestad_hja_birgi_leifi_sem_a_eina_holu_eftir/#Mest_lesi__dag*/
     	
-    	System.out.println("http://www.mbl.is/sport/golf/#Mest_lesi__dag -> " + canonicalizerTest.getCanonicalURL("http://www.mbl.is/sport/golf/#Mest_lesi__dag"));
+    	System.out.println("https://itunes.apple.com/is/app/morgunbla-i/id512506440 -> " + canonicalizerTest.getCanonicalURL("https://itunes.apple.com/is/app/morgunbla-i/id512506440"));
     	
     	/*System.out.println("http://mbl.is -> " + canonicalizerTest.getCanonicalURL("http://mbl.is"));
     	System.out.println("www.mbl.is -> " + canonicalizerTest.getCanonicalURL("www.mbl.is"));
@@ -50,10 +52,18 @@ public class URLCanonicalizer {
     	if (url == null) {
     		return null;
     	}
-    	// TODO check length
-		String coreURL = url.substring("http://".length());
-		String[] wordList = coreURL.split("/");
 		
+		String coreURL = "";
+    	
+		if(url.matches("http://.*")) {
+			prefix = "http://";
+		}
+		else if (url.matches("https://.*")) {
+			prefix = "https://";
+		}
+		
+		coreURL = url.substring(prefix.length());
+		String[] wordList = coreURL.split("/");
 		wordList[0] = wordList[0].toLowerCase();
 
 		for (int i=0; i<wordList.length-1; i++) {
@@ -95,7 +105,7 @@ public class URLCanonicalizer {
 	}
 
 	private String assembleURL(String[] wordList) {
-		String assembledURL = "http://";
+		String assembledURL = prefix;
 		for (int i=0; i<wordList.length; i++) {
 			if (wordList[i] != null) {
 				assembledURL += wordList[i] + "/";
@@ -109,7 +119,7 @@ public class URLCanonicalizer {
     	
     	String preURL = url;
     	
-    	if (url.matches("http://www.*")) {
+    	if (url.matches("http://www.*") || url.matches("https://www.*")) {
     		preURL = preURL.replaceFirst("www.", "");
     	}
     	
@@ -117,7 +127,7 @@ public class URLCanonicalizer {
     		preURL = preURL.replaceFirst("www.", "http://");
     	}
     	
-    	else if(url.matches("http.*")) {
+    	else if(url.matches("http.*") || url.matches("https.*")) {
     		return preURL;
     	}
     	
