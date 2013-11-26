@@ -151,25 +151,38 @@ public class WebCrawler {
 			score += 1.0;
 		}
     	
+    	for (int i=0; i<queryWords.length; i++) {            
+            if (url.toLowerCase().contains(queryWords[i])) {        
+                score += 1.0;
+                break;
+            }
+    	}	
+    	
+    	if (rel) {
+			score += 1.0;
+		}
+		
+		return score;
+    	
+    	/* String coreURL = url.substring("http://".length());
+		String[] urlList = coreURL.split("/");
+		
+    	boolean match = false;
     	for (int i=0; i<queryWords.length; i++) {
-    		/* int scoreCnt=0;
+    		int scoreCnt=0;
     		for (int j=0; j<queryWords[i].length(); j++) {
     			if (true) {
+    				match = true;
     				scoreCnt++;
     			}
-    		}*/
+    		}
     		
     		if (url.toLowerCase().contains(queryWords[i])) {	
     			score += 1.0;
     			break;
     		}
-    	}
+    	} */
 
-		if (rel) {
-			score += 1.0;
-		}
-		
-		return score;
 	}
 
 	/**
