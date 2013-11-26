@@ -25,19 +25,20 @@ public class WebCrawler {
     private final boolean DEBUG = false;     // To control debugging output
     private final String userAgent = "RuBot"; 	// Reykjavik University bot
 
-    Frontier frontier;      // The frontier, the list of pages yet to be crawled (visited)
-    Hashtable<String, Integer> visitedURLs;    // The list of visited URLs
-    URLCanonicalizer canonicalizer; // Used to transform URLs to canonical form
-    int maxPages;           // max number of pages to crawl, may be supplied by the user
+    Frontier frontier;      					// The frontier, the list of pages yet to be crawled (visited)
+    Hashtable<String, Integer> visitedURLs;    	// The list of visited URLs
+    URLCanonicalizer canonicalizer; 			// Used to transform URLs to canonical form
+    int maxPages;           					// max number of pages to crawl, may be supplied by the user
     
-    String topic;           // the topic we are interested in
-    String topicEN = "";			// the topic we are interested in
-    String queryString = "";    // the query string we are interested in
-    String[] queryWords;   // individual words of the query string
-    String queryStringEN = "";    // the query string in english we are interested in
-    String[] queryWordsEN;   // individual english words of the query string
+    String topic;           					// the topic we are interested in
+    String topicEN = "";						// the topic we are interested in, converted to English alphabet characters
+    String queryString = "";    				// the query string we are interested in
+    String[] queryWords;   						// individual words of the query string
+    String queryStringEN = "";    				// the query string in English alphabet characters we are interested in
+    String[] queryWordsEN;   					// individual English words of the query string
     boolean usingTopicEN = false;
     boolean usingQueryEN = false;
+    int scoreIncrement = 1;						// the increment step used by the scoring function
 
     RobotTxtParser robotParser; // A robots.txt parser
     HTMLParser htmlParser;  	// A HTMLParser
@@ -76,6 +77,7 @@ public class WebCrawler {
         topic = argv[1].toLowerCase();  							// The topic
         queryString = argv[2].toLowerCase().replaceAll("\\s+", " ");// The query words supplied by the user
         queryWords = queryString.split("\\s");    					// Assume space between query words
+        scoreIncrement = queryWords.length;							// Use the number of words in the query as the increment factor
         
         topicToEN();
         queryWordsToEN(); // Map possible IS characters to US
@@ -124,7 +126,7 @@ public class WebCrawler {
     		topicEN = topic;
     	}
 	}
-
+    
 	private void queryWordsToEN() {
         queryWordsEN = queryWords;  					// Assume space between query words
     	for (int i=0; i<queryWords.length; i++) {
@@ -140,65 +142,22 @@ public class WebCrawler {
     	}
 	}
 
-	// Retrieve the links (href) from the given url
+	/**
+	 * Retrieve the links (href) from the given url
+	 * @param url	The URL to parse links from
+	 * @return		A collection of link Elements
+	 */
     private Elements getLinks(String url) {
         Elements links;
         try {
             links = htmlParser.getLinks();      // Retrieve the <a href> links
         }
         catch (IOException e) {
-            System.out.println("Could not get links from " + url);
+            if (DEBUG) System.out.println("Could not get links from " + url);
             links = new Elements();             // Empty elements
         }
         return links;
     }
-
-    // Adds the retrieved links to the frontier
-    private void addLinks(Elements links, int fromRelevant) {
-	/********************************************************/
-	/* GAP!													*/
-	/* Make sure that you add canonicalized versions		*/
-	/* of the links to the frontier							*/
-	/* You also need to score the links						*/
-	/********************************************************/
-    	for (Element link : links) {
-    		
-    		System.out.println(link.attr("abs:href"));
-    		String url = canonicalizer.getCanonicalURL(link.attr("abs:href"));
-    		System.out.println(url);
-    		System.out.println("--------------------------------------------");
-    		
-    		Double score = rateURL(url, fromRelevant);
-    		synchronized (frontier) {
-    			frontier.add(url, score);
-			}
-    		
-    	}
-    }
-
-    /**
-     * 
-     * @param url
-     * @param rel
-     * @return
-     */
-    private Double rateURL(String url, double rel) {
-    	Double score = rel;	// Will be 2 if it comes from a relevant site, otherwise 0
-    	
-    	// Increment score for every query word found in the url
-    	for (int i=0; i<queryWordsEN.length; i++) {            
-            if (url.toLowerCase().contains(queryWordsEN[i])) {        
-                score += 1.0;
-            }
-    	}
-    	if (url.toLowerCase().contains(topicEN)) {
-			score += queryWordsEN.length;
-		}
-    	score += rel;
-    	
-		return score;
-
-	}
 
 	/**
      * Does a case-insensitive comparison in searching for 
@@ -209,7 +168,7 @@ public class WebCrawler {
      * @return true if our phrase query is found in the given text, otherwise false.
      */
     private boolean isRelevantText(String text) {
-    	return text.toLowerCase().contains(queryString) ? true : false; 
+    	return text.toLowerCase().contains(queryStringEN) ? true : false; 
     }
     
     /**
@@ -222,6 +181,52 @@ public class WebCrawler {
     private boolean isRelevantUrl() {
     	return isRelevantText(htmlParser.getBody());
     }
+    
+    /**
+     * Calculates the rating of the given URL. Most weight is given based on whether or not
+     * the URL was found on a page that was relevant (determined by the rel parameter).
+     * For each query word that appears in the URL, the score is incremented by 1.
+     * If the topic appears in the URL, increment the score as is if all query words had
+     * appeared in the URL.  
+     * @param url	The URL to rate
+     * @param rel	The relevance score, 2 if it comes from a relevant site, otherwise 0
+     * @return	the score
+     */
+    private Double rateURL(String url, double rel) {
+    	Double score = rel;
+    	String lowerUrl = url.toLowerCase();
+    	
+    	// Increment score for every query word found in the url
+    	// If all words are found, this corresponds to one 'scoreIncrement'
+    	for (int i=0; i<queryWordsEN.length; i++) {            
+            if (lowerUrl.contains(queryWordsEN[i])) {        
+                score += 1.0;
+            }
+    	}
+    	// If the topic is found in the url, also increment the score
+    	if (lowerUrl.contains(topicEN)) {
+			score += scoreIncrement;
+		}
+		return score;
+	}    
+
+    /**
+     * Adds the retrieved links to the frontier and scores them.
+     * @param links			The collection of links
+     * @param fromRelevant	Relevance scores to factor into the score
+     */
+    private void addLinks(Elements links, int fromRelevant) {
+    	for (Element link : links) {
+    		// Get the canonicalized version of the absolute URL
+    		String url = canonicalizer.getCanonicalURL(link.attr("abs:href"));
+    		Double score = rateURL(url, fromRelevant);
+    		
+    		synchronized (frontier) {	// Take a lock on the frontier while adding the URL to the queue
+    			frontier.add(url, score);
+			}
+    		
+    	}
+    }
 
     /**
      * Spawns a thread that processes the given url, including connecting to it,
@@ -229,7 +234,7 @@ public class WebCrawler {
      * @param url	The URL to process
      * @return		The thread that is processing it.
      */
-    public Thread processUrl(final String url) {
+    private Thread processUrl(final String url) {
     	// Define the thread
     	Thread thread = new Thread(new Runnable() {
 			@Override
@@ -251,9 +256,9 @@ public class WebCrawler {
 					totalRelevant++;
 		    		System.out.println("Query found in page: " + url);
 		    		
-		    		// If the query is found in the page, we give it two 'relevance points'
+		    		// If the query is found in the page, we give it lots of 'relevance points'
 		    		// which are used to score the links found on the page
-		    		relevance = 2;		
+		    		relevance = 3*scoreIncrement;		
 		    	}
 				addLinks(getLinks(url), relevance);
 			}
@@ -265,24 +270,17 @@ public class WebCrawler {
     /**
      * Main crawling method.
      */
-    public void crawl()
+    private void crawl()
     {
     	List<Thread> threads = new ArrayList<Thread>();
     	long startTime = System.currentTimeMillis();
         for (int i = 0; i < maxPages; i++) {        // Visit maxPages
-    	    /****************************************************/
-    	    /* GAP!												*/
-    	    /* Retrive the next url from the frontier			*/
-    	    /* parse and process it given that					*/
-    	    /* 	you are allowed to do so (robot.txt)			*/
-    	    /* 	and that the url has not been visitied before 	*/
-    	    /****************************************************/
         	URLScore currentUrl = null;
         	
         	// Retrieve the next URL from the frontier which may be temporarily empty
         	// if other threads have taken all the available URLS
 			while (currentUrl == null) {
-				synchronized (frontier) {	 
+				synchronized (frontier) {	 // Lock the frontier while removing
 					if (!frontier.isEmpty()) {
 						currentUrl = frontier.removeNext();
 					} 
