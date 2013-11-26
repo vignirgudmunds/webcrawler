@@ -325,12 +325,17 @@ public class WebCrawler {
 
     public static void main(String[] argv)
     {
-    	/*URLCanonicalizer canonicalizerTest = new URLCanonicalizer();
-    	canonicalizerTest.testCanonical();*/
-    	
         WebCrawler wc = new WebCrawler();
-        wc.initialize(argv);
-        wc.crawl();
+        if (argv.length < 3) {
+        	System.out.println("Usage: java -jar WebCrawler.jar <URL> <TOPIC> <QUERY WORDS> <N>");
+        	System.out.println("<URL>\tSeed page");
+        	System.out.println("<TOPIC>\tTopic to guide the crawler to relevant links");
+        	System.out.println("<QUERY WORDS>\tQuery phrase to search for");
+        	System.out.println("<N>(optional)\tMaximum number of pages to crawl");
+        } else {
+        	wc.initialize(argv);
+            wc.crawl();
+        }
     }
 }
 
