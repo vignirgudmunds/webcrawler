@@ -1,18 +1,21 @@
-// A simple Web Crawler written in Java
-// Partly based on http://cs.nyu.edu/courses/fall02/G22.3033-008/proj1.html
-// Our crawler is a sequential, topical crawler.
-// It uses a priority queue for unvisited links.
-// The links are scored with 1.0 if the topic is part of the anchor text for a link, else 0.0.
-// This crawler lists HTML pages that contain the query words in their <body> section.
-// Usage: From command line 
-//     java WebCrawler <URL> <TOPIC> <QUERY WORDS> <N>
-//  where   URL is the url (seed) to start the crawl,
-//          TOPIC is the topic we are interested in (used to quide the crawler to relevant links)
-//          QUERY WORDS is the phrase we are interested in
-//          N (optional) is the maximum number of pages to crawl
-//  Hrafn Loftsson, Reykjavik University, Fall 2013
-//import java.text.*;
-
+/**
+ * A simple Web Crawler written in Java
+ * Partly based on http://cs.nyu.edu/courses/fall02/G22.3033-008/proj1.html and Assignment 4 skeleton (RU Web Mining 2013-3)
+ * 
+ * Our crawler is a mostly sequential, topical crawler.
+ * It uses a priority queue for unvisited links.
+ * The links are scored based on relevance of the URL and the page that contained the link.
+ * This crawler lists HTML pages that contain the phrase query in their <body> section.
+ * 
+ * Usage: From command line 
+ *      java -jar HV-WebCrawler <URL> <TOPIC> <QUERY WORDS> <N>
+ * where  	URL is the url (seed) to start the crawl,
+ * 			TOPIC is the topic we are interested in (used to quide the crawler to relevant links)
+ * 			QUERY WORDS is the phrase we are interested in
+ * 			N (optional) is the maximum number of pages to crawl
+ * 
+ * Helga Gudmundsdottir and Vignir Orn Gudmundsson, Reykjavik University, Fall 2013
+ */
 import java.util.*;
 import java.io.*;
 
@@ -36,14 +39,15 @@ public class WebCrawler {
     String[] queryWords;   						// individual words of the query string
     String queryStringEN = "";    				// the query string in English alphabet characters we are interested in
     String[] queryWordsEN;   					// individual English words of the query string
-    boolean usingTopicEN = false;
-    boolean usingQueryEN = false;
+    boolean usingTopicEN = false;				// controls topic-related actions based on the language used (IS or EN)
+    boolean usingQueryEN = false;				// controls query-related actions based on the language used (IS or EN)
     int scoreIncrement = 1;						// the increment step used by the scoring function
 
     RobotTxtParser robotParser; // A robots.txt parser
     HTMLParser htmlParser;  	// A HTMLParser
     int totalRelevant=0;    	// Total number of pages containing our query string
     
+    // A hashmap which maps Icelandic characters to English synonym characters
     static final Map<String, String> IStoEN;
 	static {
 	    IStoEN = new HashMap<String, String>();
@@ -79,8 +83,8 @@ public class WebCrawler {
         queryWords = queryString.split("\\s");    					// Assume space between query words
         scoreIncrement = queryWords.length;							// Use the number of words in the query as the increment factor
         
-        topicToEN();
-        queryWordsToEN(); // Map possible IS characters to US
+        topicToEN();												// Maps characters of the topic to EN version, if any
+        queryWordsToEN(); 											// Maps characters of the query words to EN version, if any
 
         String canonicalUrl = canonicalizer.getCanonicalURL(url);	// Canonicalize the URL
         frontier.add(canonicalUrl, 0.0);                            // The seed has score 0.0
@@ -112,6 +116,10 @@ public class WebCrawler {
         System.out.println("--------------------------------------------------------");
    }   
 
+    /**
+     * Topic is converted from IS to EN, by using the static hashmap above
+     * which maps any IS characters found to its EN character sequence
+     */
     private void topicToEN() {
     	for (int i=0; i<topic.length(); i++) {
 			String strIS = String.valueOf(topic.charAt(i));
@@ -127,6 +135,10 @@ public class WebCrawler {
     	}
 	}
     
+    /**
+     * Query words are converted from IS to EN, by using the static hashmap above
+     * which maps any IS characters found in each word to its EN character sequence
+     */
 	private void queryWordsToEN() {
         queryWordsEN = queryWords;  					// Assume space between query words
     	for (int i=0; i<queryWords.length; i++) {
@@ -327,9 +339,9 @@ public class WebCrawler {
     {
         WebCrawler wc = new WebCrawler();
         if (argv.length < 3) {
-        	System.out.println("Usage: java -jar WebCrawler.jar <URL> <TOPIC> <QUERY WORDS> <N>");
-        	System.out.println("<URL>\tSeed page");
-        	System.out.println("<TOPIC>\tTopic to guide the crawler to relevant links");
+        	System.out.println("Usage: java -jar HV-WebCrawler.jar <URL> <TOPIC> <QUERY WORDS> <N>");
+        	System.out.println("<URL>\t\tSeed page");
+        	System.out.println("<TOPIC>\t\tTopic to guide the crawler to relevant links");
         	System.out.println("<QUERY WORDS>\tQuery phrase to search for");
         	System.out.println("<N>(optional)\tMaximum number of pages to crawl");
         } else {
