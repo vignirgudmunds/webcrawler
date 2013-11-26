@@ -22,7 +22,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 public class WebCrawler {
-    private final int SEARCH_LIMIT = 500;  	// Absolute max # of pages crawled. Respect this, be polite!
+    private final int SEARCH_LIMIT = 10000;  	// Absolute max # of pages crawled. Respect this, be polite!
     private final int MILLISECOND_WAIT = 300; // Wait between url requests, be polite!
     private final boolean DEBUG = false;     // To control debugging output
     private final String userAgent = "RuBot"; 	// Reykjavik University bot
@@ -169,8 +169,10 @@ public class WebCrawler {
     		String url = canonicalizer.getCanonicalURL(link.attr("abs:href"));
     		
     		Double score = rateURL(url, fromRelevant);
+    		synchronized (frontier) {
+    			frontier.add(url, score);
+			}
     		
-    		frontier.add(url, score);
     	}
     }
 
@@ -237,7 +239,6 @@ public class WebCrawler {
     	//System.out.println("OLD URL" + url);
     	//url = canonicalizer.getCanonicalURL(url);
     	//System.out.println("NEW URL" + url);
-    	
     	try {
     		htmlParser.connect(url, userAgent);
     		
@@ -262,8 +263,8 @@ public class WebCrawler {
     // This method does the crawling.
     public void crawl()
     {
+    	List<Thread> threads = new ArrayList<Thread>();
     	long startTime = System.currentTimeMillis();
-    	//long visitTime = System.currentTimeMillis();
         for (int i = 0; i < maxPages; i++) {        // Visit maxPages
     	    /****************************************************/
     	    /* GAP!												*/
@@ -272,24 +273,48 @@ public class WebCrawler {
     	    /* 	you are allowed to do so (robot.txt)			*/
     	    /* 	and that the url has not been visitied before 	*/
     	    /****************************************************/
-        	// Retrive the next url from the frontier and process the url
-        	long visitTime = System.currentTimeMillis();
-        	URLScore currentUrl = frontier.removeNext();
-        	boolean shouldWait = false;
-        	if (robotParser.isUrlAllowed(currentUrl.getURLString())) {
-        		
-        		shouldWait = processUrl(currentUrl.getURLString());
-        	}
-        	int msToWait = MILLISECOND_WAIT - (int)(System.currentTimeMillis() - visitTime);
-        	if (msToWait > 10 && currentUrl.getHost().equals(frontier.peekNextHost())) {
-        		//if (currentUrl.getHost().equals(frontier.peekNextHost())) {
-        			wait(msToWait);          // Be polite, wait x milliseconds before fetching the next page
-        	} /*else {
-        			wait(MILLISECOND_WAIT/2);        // Be polite, wait x/2 milliseconds before fetching the next page if it's a different host name
-        		}*/
-        	//}
-
-            if (frontier.isEmpty()) break;   // Break the loop if frontier is empty
+        	Thread thread = new Thread(new Runnable() {
+        		private void wait(int milliseconds)	// Halt execution for the specified number of milliseconds
+        	    {
+        	        try {
+        	            Thread.currentThread().sleep(milliseconds);
+        	        }
+        	        catch (InterruptedException e) {
+        	                e.printStackTrace();
+        	        }
+        	    }
+				@Override
+				public void run() {
+					URLScore currentUrl = null;
+					while (currentUrl == null) {
+						boolean wait = true;
+	    				synchronized (frontier) {
+	    					if (!frontier.isEmpty()) {
+	    						currentUrl = frontier.removeNext();
+	    						wait = false;
+	    					}
+	    				}
+	    				if (wait) {
+	    					wait(1);
+	    				}
+					}
+					if (robotParser.isUrlAllowed(currentUrl.getURLString())) { // robotparser lock?
+        				processUrl(currentUrl.getURLString());
+					}
+				}
+        	});
+        	thread.start();
+        	threads.add(thread);
+        	wait(MILLISECOND_WAIT);
+        	
+        	//if (frontier.isEmpty()) break;	// TODO want this?
+        }
+        for (Thread t :  threads) {
+        	try {
+        		t.join();
+        	} catch (InterruptedException e) {
+        		e.printStackTrace();
+			}
         }
         double elapsedTime = (System.currentTimeMillis() - startTime) / 1000.0;
         System.out.println("--------------------------------------------------------");
