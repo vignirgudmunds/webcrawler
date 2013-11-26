@@ -10,7 +10,7 @@
 //          TOPIC is the topic we are interested in (used to quide the crawler to relevant links)
 //          QUERY WORDS is the phrase we are interested in
 //          N (optional) is the maximum number of pages to crawl
-//  Hrafn Loftsson, Reykjavik University, Fall 2013
+//  Helga Gudmundsdottir and Vignir Orn Gudmundsson, Reykjavik University, Fall 2013
 //import java.text.*;
 
 import java.util.*;
@@ -36,14 +36,15 @@ public class WebCrawler {
     String[] queryWords;   						// individual words of the query string
     String queryStringEN = "";    				// the query string in English alphabet characters we are interested in
     String[] queryWordsEN;   					// individual English words of the query string
-    boolean usingTopicEN = false;
-    boolean usingQueryEN = false;
+    boolean usingTopicEN = false;				// controls topic-related actions based on the language used (IS or EN)
+    boolean usingQueryEN = false;				// controls query-related actions based on the language used (IS or EN)
     int scoreIncrement = 1;						// the increment step used by the scoring function
 
     RobotTxtParser robotParser; // A robots.txt parser
     HTMLParser htmlParser;  	// A HTMLParser
     int totalRelevant=0;    	// Total number of pages containing our query string
     
+    // A hashmap which maps Icelandic characters to English synonym characters
     static final Map<String, String> IStoEN;
 	static {
 	    IStoEN = new HashMap<String, String>();
@@ -79,8 +80,8 @@ public class WebCrawler {
         queryWords = queryString.split("\\s");    					// Assume space between query words
         scoreIncrement = queryWords.length;							// Use the number of words in the query as the increment factor
         
-        topicToEN();
-        queryWordsToEN(); // Map possible IS characters to US
+        topicToEN();												// Maps characters of the topic to EN version, if any
+        queryWordsToEN(); 											// Maps characters of the query words to EN version, if any
 
         String canonicalUrl = canonicalizer.getCanonicalURL(url);	// Canonicalize the URL
         frontier.add(canonicalUrl, 0.0);                            // The seed has score 0.0
@@ -112,6 +113,10 @@ public class WebCrawler {
         System.out.println("--------------------------------------------------------");
    }   
 
+    /**
+     * Topic is converted from IS to EN, by using the static hashmap above
+     * which maps any IS characters found to its EN character sequence
+     */
     private void topicToEN() {
     	for (int i=0; i<topic.length(); i++) {
 			String strIS = String.valueOf(topic.charAt(i));
@@ -127,6 +132,10 @@ public class WebCrawler {
     	}
 	}
     
+    /**
+     * Query words are converted from IS to EN, by using the static hashmap above
+     * which maps any IS characters found in each word to its EN character sequence
+     */
 	private void queryWordsToEN() {
         queryWordsEN = queryWords;  					// Assume space between query words
     	for (int i=0; i<queryWords.length; i++) {
@@ -324,10 +333,7 @@ public class WebCrawler {
     }
 
     public static void main(String[] argv)
-    {
-    	/*URLCanonicalizer canonicalizerTest = new URLCanonicalizer();
-    	canonicalizerTest.testCanonical();*/
-    	
+    {    	
         WebCrawler wc = new WebCrawler();
         wc.initialize(argv);
         wc.crawl();
