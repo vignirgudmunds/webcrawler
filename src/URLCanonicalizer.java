@@ -50,7 +50,7 @@ public class URLCanonicalizer {
     	if (url == null) {
     		return null;
     	}
-    	
+    	// TODO check length
 		String coreURL = url.substring("http://".length());
 		String[] wordList = coreURL.split("/");
 		
