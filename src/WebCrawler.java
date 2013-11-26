@@ -15,8 +15,6 @@
 
 import java.util.*;
 import java.io.*;
-import java.net.MalformedURLException;
-import java.net.URL;
 
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -26,7 +24,6 @@ public class WebCrawler {
     private final int MILLISECOND_WAIT = 300; // Wait between url requests, be polite!
     private final boolean DEBUG = false;     // To control debugging output
     private final String userAgent = "RuBot"; 	// Reykjavik University bot
-    
 
     Frontier frontier;      // The frontier, the list of pages yet to be crawled (visited)
     Hashtable<String, Integer> visitedURLs;    // The list of visited URLs
@@ -157,7 +154,7 @@ public class WebCrawler {
     }
 
     // Adds the retrieved links to the frontier
-    private void addLinks(Elements links, boolean fromRelevant) {
+    private void addLinks(Elements links, int fromRelevant) {
 	/********************************************************/
 	/* GAP!													*/
 	/* Make sure that you add canonicalized versions		*/
@@ -176,25 +173,26 @@ public class WebCrawler {
     	}
     }
 
-    private Double rateURL(String url, boolean rel) {
+    /**
+     * 
+     * @param url
+     * @param rel
+     * @return
+     */
+    private Double rateURL(String url, double rel) {
+    	Double score = rel;	// Will be 2 if it comes from a relevant site, otherwise 0
     	
-    	Double score = 0.0;
-    	
-    	if (url.toLowerCase().contains(topicEN)) {
-			score += 1.0;
-		}
-    	
+    	// Increment score for every query word found in the url
     	for (int i=0; i<queryWordsEN.length; i++) {            
             if (url.toLowerCase().contains(queryWordsEN[i])) {        
                 score += 1.0;
-                break;
             }
-    	}	
-    	
-    	if (rel) {
-			score += 1.0;
+    	}
+    	if (url.toLowerCase().contains(topicEN)) {
+			score += queryWordsEN.length;
 		}
-		
+    	score += rel;
+    	
 		return score;
 
 	}
@@ -223,44 +221,47 @@ public class WebCrawler {
     }
 
     /**
-     * Attempts to connect to the given url and retrive the html document.
-     * 
-     * @param url
+     * Spawns a thread that processes the given url, including connecting to it,
+     * extracting its links and deciding if it's relevant.
+     * @param url	The URL to process
+     * @return		The thread that is processing it.
      */
-    private boolean processUrl(String url)
-    {
-	/********************************************************/
-	/* GAP!													*/
-	/* Process the given url, which means at least:			*/
-	/* 1) Connect to it using the HTML parser				*/
-	/* 2) Print an appropriate message if it is relevant	*/
-	/* 3) Extract links from the url and add to frontier	*/
-	/********************************************************/	
-    	//System.out.println("OLD URL" + url);
-    	//url = canonicalizer.getCanonicalURL(url);
-    	//System.out.println("NEW URL" + url);
-    	try {
-    		htmlParser.connect(url, userAgent);
-    		
-    	} catch (IOException e) {
-    		if (DEBUG) {
-    			System.out.println(e.getMessage() + ": " + url);
-    			return false;
-    		}
-		}
-    	boolean relevant = false;
-		
-		if (isRelevantUrl()) {
-			totalRelevant++;
-			relevant = true;
-    		System.out.println("Query found in page: " + url);
-    	}
-		
-		addLinks(getLinks(url), relevant);
-		return true;
+    public Thread processUrl(final String url) {
+    	// Define the thread
+    	Thread thread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				// Connect to the URL
+				try {
+		    		htmlParser.connect(url, userAgent);
+		    		
+		    	} catch (IOException e) {
+		    		if (DEBUG) {
+		    			System.out.println(e.getMessage() + ": " + url);
+		    			return;
+		    		}
+				}
+				// Process it and decide if it's relevant
+		    	int relevance = 0;
+				
+				if (isRelevantUrl()) {
+					totalRelevant++;
+		    		System.out.println("Query found in page: " + url);
+		    		
+		    		// If the query is found in the page, we give it two 'relevance points'
+		    		// which are used to score the links found on the page
+		    		relevance = 2;		
+		    	}
+				addLinks(getLinks(url), relevance);
+			}
+    	});
+    	thread.start();
+    	return thread;
     }
 
-    // This method does the crawling.
+    /**
+     * Main crawling method.
+     */
     public void crawl()
     {
     	List<Thread> threads = new ArrayList<Thread>();
@@ -273,50 +274,36 @@ public class WebCrawler {
     	    /* 	you are allowed to do so (robot.txt)			*/
     	    /* 	and that the url has not been visitied before 	*/
     	    /****************************************************/
-        	Thread thread = new Thread(new Runnable() {
-        		private void wait(int milliseconds)	// Halt execution for the specified number of milliseconds
-        	    {
-        	        try {
-        	            Thread.currentThread().sleep(milliseconds);
-        	        }
-        	        catch (InterruptedException e) {
-        	                e.printStackTrace();
-        	        }
-        	    }
-				@Override
-				public void run() {
-					URLScore currentUrl = null;
-					while (currentUrl == null) {
-						boolean wait = true;
-	    				synchronized (frontier) {
-	    					if (!frontier.isEmpty()) {
-	    						currentUrl = frontier.removeNext();
-	    						wait = false;
-	    					}
-	    				}
-	    				if (wait) {
-	    					wait(1);
-	    				}
-					}
-					if (robotParser.isUrlAllowed(currentUrl.getURLString())) { // robotparser lock?
-        				processUrl(currentUrl.getURLString());
-					}
-				}
-        	});
-        	thread.start();
-        	threads.add(thread);
-        	wait(MILLISECOND_WAIT);
+        	URLScore currentUrl = null;
         	
-        	//if (frontier.isEmpty()) break;	// TODO want this?
+        	// Retrieve the next URL from the frontier which may be temporarily empty
+        	// if other threads have taken all the available URLS
+			while (currentUrl == null) {
+				synchronized (frontier) {	 
+					if (!frontier.isEmpty()) {
+						currentUrl = frontier.removeNext();
+					} 
+				}
+        	}
+			// Check if we are allowed to parse and process the URL
+			if (robotParser.isUrlAllowed(currentUrl.getURLString())) { 
+				threads.add(processUrl(currentUrl.getURLString()));	// Designate the actual work to a thread
+				wait(MILLISECOND_WAIT);									// Be polite
+			} else {
+				i--;	// Don't count this as a crawled page if we weren't allowed to crawl it
+			}
         }
+        
+        // Clean up any remaining for any remaining threads
         for (Thread t :  threads) {
         	try {
         		t.join();
         	} catch (InterruptedException e) {
-        		e.printStackTrace();
+        		if (DEBUG) e.printStackTrace();
 			}
         }
         double elapsedTime = (System.currentTimeMillis() - startTime) / 1000.0;
+        
         System.out.println("--------------------------------------------------------");
         System.out.println("Search complete, " + maxPages + " pages crawled");
         System.out.println("Search query " + queryString + " found in " + totalRelevant + " pages");

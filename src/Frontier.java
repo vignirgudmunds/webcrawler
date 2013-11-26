@@ -4,10 +4,7 @@
 */
 
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.*;
-
-import org.omg.CORBA.Current;
 
 public class Frontier {
     private PriorityQueue<URLScore> queueURLs;  		// A priority queue of URLs
@@ -22,18 +19,18 @@ public class Frontier {
         theURLs = new Hashtable<String, Integer>(initialCapacity);
     }
     
+    /**
+     * Adds a new URLScore to the frontier if the url has not been visited before
+     * @param url		String
+     * @param score		Priority score of the url
+     */
     public void add(String url, double score) {
-	/********************************************************/
-	/* GAP!													*/
-	/* Adds a new URLScore to the frontier, but only if		*/
-	/* the url is not already there.						*/
-	/********************************************************/
     		// If the url has been visited before, we don't need to do anything else
         	if (!theURLs.containsKey(url)) {
         		try {
         			URLScore theUrl = new URLScore(url, score);
         			queueURLs.add(theUrl);
-            		theURLs.put(url, 0);	// we've seen this url before
+            		theURLs.put(url, 0);		// Log this as a seen URL
             		totalCount++;
             	} catch (MalformedURLException e) {
             		if (debug) {
@@ -43,24 +40,25 @@ public class Frontier {
         	}
     }
 
+    /**
+     * @return the highest priority URL or null if the queue is empty
+     */
     public URLScore removeNext() {
-	/********************************************************/
-	/* GAP!							*/
-	/* Remove and return the next URLScore in the frontier 	*/
-	/********************************************************/
     	return queueURLs.poll();
     	
     }
 
+    /**
+     * @return true if the queue is empty, false otherwise 
+     */
     public boolean isEmpty() {
-    	return theURLs.isEmpty();
+    	return queueURLs.isEmpty();
     }
 
+    /**
+     * @return the total number of distinctive URLs found (including those visited) 
+     */
     public int totalCount() {
     	return totalCount;
-    }
-    
-    public int totalDomains() {
-    	return theURLs.size();
     }
 }

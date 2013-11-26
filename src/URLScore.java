@@ -1,18 +1,19 @@
 import java.net.MalformedURLException;
 import java.net.URL;
 
-// A data object for a URL and its score
-
+/**
+ * A data object for a URL and its score.
+ *
+ * Unmodified assignment code. 
+ */
 public class URLScore implements Comparable<URLScore> {
     private static int Counter=0;
     private URL _url;
-    private String _domain;		// TODO added this
     private double _score;
     private int _index;
 
     public URLScore(String url, double score) throws MalformedURLException {
         _url = new URL(url);
-        _domain = _url.getHost();
         _score = score;
         _index = Counter++;
     }
@@ -21,11 +22,6 @@ public class URLScore implements Comparable<URLScore> {
         return _url;
     }
     
-    //TODO added this
-    public String getHost() {
-    	return _domain;
-    }
-
     public double getScore() {
         return _score;
     }

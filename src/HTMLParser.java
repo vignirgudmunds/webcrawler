@@ -4,7 +4,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Document;
 
 import java.io.IOException;
-import java.net.URL;
 
 /*
  * This parser uses the jsoup Java HTML Parser -- see http://jsoup.org/
@@ -23,30 +22,27 @@ public class HTMLParser {
         }
     }
 
+    /**
+     * Retrieves all links from the last document retrieved.
+     * Filters links that are non-http/https protocols. 
+     * @return a collection of Link Elements
+     * @throws IOException
+     */
     public Elements getLinks() throws IOException {
-	/********************************************************/
-	/* GAP!												*/
-	/* Get the links from the last document retrieved	*/
-	/* We are only interested in <a href> links that	*/
-	/* are html pages.									*/
-	/********************************************************/
     	Elements hrefs = currentDoc.select("a[href]");
     	Elements links = new Elements();
     	for (Element link : hrefs) {
     		if (link.attr("abs:href").contains("http")) {
     			links.add(link);
     		}
-    	}
-    	
+    	}    	
     	return links;
     }
 
-    public String getBody() { //throws IOException {
-	/********************************************************/
-	/* GAP!												*/
-	/* Get the text of the body from the last document 	*/
-	/* retrieved										*/
-	/********************************************************/
+    /**
+     * @return the body of the last document retrieved
+     */
+    public String getBody() {
     	return currentDoc.text();
     }
 }

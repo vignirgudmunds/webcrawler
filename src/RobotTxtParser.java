@@ -31,6 +31,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Hashtable;
 
+/**
+ *	Unmodified from assignment code.
+ */
 public class RobotTxtParser {
     private final String robotTxtString = "robots.txt";
     private final String httpString = "http://";
