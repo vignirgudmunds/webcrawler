@@ -163,7 +163,10 @@ public class WebCrawler {
 	/********************************************************/
     	for (Element link : links) {
     		
+    		System.out.println(link.attr("abs:href"));
     		String url = canonicalizer.getCanonicalURL(link.attr("abs:href"));
+    		System.out.println(url);
+    		System.out.println("--------------------------------------------");
     		
     		Double score = rateURL(url, fromRelevant);
     		synchronized (frontier) {
